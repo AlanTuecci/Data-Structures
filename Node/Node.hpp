@@ -1,6 +1,6 @@
 /**
  * @file Node.hpp
- * @author Alan Tuecci (Alan.Tuecc@hotmail.com)
+ * @author Alan Tuecci (Alan.Tuecci@hotmail.com)
  * @brief Interface for Node class
  * @version 0.1
  * @date 2024-08-21
@@ -18,6 +18,7 @@
 template <class ItemType>
 class Node
 {
+public:
     /**
      * @brief default constructor
      */
@@ -36,7 +37,16 @@ class Node
      * @param an_item to be inserted into the node
      * @param next_node_ptr to be used to point to the next node
      */
-    Node(const ItemType &an_item, std::shared_ptr<Node<ItemType>> next_node_ptr);
+    Node(const ItemType &an_item, const std::shared_ptr<Node<ItemType>> &next_node_ptr);
+
+    /**
+     * @brief parameterized constructor
+     *
+     * @param an_item to be inserted into the node
+     * @param next_node_ptr to be used to point to the next node
+     * @param prev_node_ptr to be used to point to the previous node
+     */
+    Node(const ItemType &an_item, const std::shared_ptr<Node<ItemType>> &next_node_ptr, const std::shared_ptr<Node<ItemType>> &prev_node_ptr);
 
     /**
      * @brief sets the item to be held by the node
@@ -78,7 +88,7 @@ class Node
      *
      * @return the pointer to the next node in the chain
      */
-    std::shared_ptr<Node<ItemType>> getPrev() const;
+    std::shared_ptr<Node<ItemType>> getPrevious() const;
 
 private:
     ItemType item_;
