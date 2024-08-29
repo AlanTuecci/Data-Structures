@@ -295,20 +295,19 @@ std::shared_ptr<BinaryNode<ItemType>> BinarySearchTree<ItemType>::placeNode(std:
 {
     if (subtree_ptr == std::shared_ptr<BinaryNode<ItemType>>(nullptr))
     {
+        // Case 1: Subtree is empty, insertion occurs at root of subtree
         return new_node_ptr;
     }
     else
-    {
+    {   
         if (subtree_ptr->getItem() > new_node_ptr->getItem())
         {
-            subtree_ptr->setLeftChildPtr(placeNode(subtree_ptr->getLeftChildPtr(), new_node_ptr));
-        }
-        else if ((subtree_ptr->getItem() == new_node_ptr->getItem()) && (subtree_ptr->getItem() > new_node_ptr->getItem()))
-        {
+            // Case 2: Subtree node is greater than new node, insertion occurs at the left side of the subtree
             subtree_ptr->setLeftChildPtr(placeNode(subtree_ptr->getLeftChildPtr(), new_node_ptr));
         }
         else
         {
+            // Case 3: New node is greater than or equal to subtree node, insertion occurs at the right side of the subtree
             subtree_ptr->setRightChildPtr(placeNode(subtree_ptr->getRightChildPtr(), new_node_ptr));
         }
         return subtree_ptr;

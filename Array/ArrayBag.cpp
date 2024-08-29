@@ -2,7 +2,7 @@
  * @file ArrayBag.hpp
  * @author Alan Tuecci (Alan.Tuecci@hotmail.com)
  * @brief Implementation for ArrayBag class
- * @version 0.1
+ * @version 0.2
  * @date 2024-08-21
  *
  * @copyright Copyright (c) 2024
@@ -15,12 +15,24 @@
  * @brief Parameterized Constructor
  */
 template <class ItemType>
-ArrayBag<ItemType>::ArrayBag() : item_count_{0}
+ArrayBag<ItemType>::ArrayBag() : item_count_{0}, array_capacity_{DEFAULT_ARRAY_SIZE_}
 {
+    elements_ = std::shared_ptr<ItemType[]>(new ItemType[array_capacity_]);
 }
 
 /**
- * @brief gets the current size of items_
+ * @brief parameterized constructor
+ *
+ * @param array_size whose value will determine the capacity of the array size at instantiation time
+ */
+template <class ItemType>
+ArrayBag<ItemType>::ArrayBag(const int &array_size) : item_count_{0}, array_capacity_{array_size}
+{
+    elements_ = std::shared_ptr<ItemType[]>(new ItemType[array_capacity_]);
+}
+
+/**
+ * @brief gets the current size of elements_
  *
  * @return the current size of the bag
  */
@@ -31,9 +43,20 @@ int ArrayBag<ItemType>::getCurrentSize() const
 }
 
 /**
+ * @brief gets the current capacity of elements_
+ *
+ * @return the current capacity of elements_
+ */
+template <class ItemType>
+int ArrayBag<ItemType>::getCurrentCapacity() const
+{
+    return array_capacity_;
+}
+
+/**
  * @brief Get the Frequency of object
  *
- * @param an_entry whose intances in items_ are to be counted up
+ * @param an_entry whose intances in elements_ are to be counted up
  * @return int - the number of times an_entry is found
  */
 template <class ItemType>
@@ -43,7 +66,7 @@ int ArrayBag<ItemType>::getFrequencyOf(const ItemType &an_entry) const
     int curr_index = 0;
     while (curr_index < item_count_)
     {
-        if (items_[curr_index] == an_entry)
+        if (elements_[curr_index] == an_entry)
         {
             frequency++;
         }
@@ -54,7 +77,7 @@ int ArrayBag<ItemType>::getFrequencyOf(const ItemType &an_entry) const
 }
 
 /**
- * @brief checks if items_ is empty
+ * @brief checks if elements_ is empty
  *
  * @return true if item_count_ == 0,
  * @return false otherwise
@@ -68,8 +91,8 @@ bool ArrayBag<ItemType>::isEmpty() const
 /**
  * @brief locates an_entry
  *
- * @param an_entry to be located in items_
- * @return true if an_entry is found in items_,
+ * @param an_entry to be located in elements_
+ * @return true if an_entry is found in elements_,
  * @return false otherwise
  */
 template <class ItemType>
@@ -79,42 +102,83 @@ bool ArrayBag<ItemType>::contains(const ItemType &an_entry) const
 }
 
 /**
- * @brief adds new_entry at the end of items_
+ * @brief adds new_entry at the end of elements_
  *
- * @param new_entry to insert into items_
- * @return true if new_entry was successfully added to items_,
- * @return false otherwise
+ * @param new_entry to insert into elements_
+ * @return true as long as there is available RAM on the system since the array's size can increase
  */
 template <class ItemType>
-bool ArrayBag<ItemType>::add(const ItemType &new_entry)
+bool ArrayBag<ItemType>::push_back(const ItemType &new_entry)
 {
-    bool has_room = (item_count_ < array_capacity_);
-    if (has_room)
+    if (item_count_ >= array_capacity_)
     {
-        items_[item_count_] = new_entry;
+        // Double the array capacity
+        array_capacity_ = array_capacity_ << 1;
+
+        // Allocate new space
+        std::shared_ptr<ItemType[]> new_elements = std::shared_ptr<ItemType[]>(new ItemType[array_capacity_]);
+
+        // Copy contents of old array into new array
+        for (int i = 0; i < item_count_; i++)
+        {
+            new_elements[i] = elements_[i];
+        }
+
+        // Add new_entry at the back of the new array and update item_count_
+        new_elements[item_count_] = new_entry;
         item_count_++;
-        return true;
+
+        // Deallocate the old array and replace it with the new array
+        elements_ = new_elements;
     }
-    return false;
+    else
+    {
+        // Add new_entry at the back of the new array and update item_count_
+        elements_[item_count_] = new_entry;
+        item_count_++;
+    }
+    return true;
 }
 
 /**
- * @brief finds and removes an_entry from items_
+ * @brief removes the last entry in the array
  *
- * @param an_entry to be removed
- * @post moves the last entry of the array to the index of the removed item
- * @return true if an_entry was successfully removed from items_,
+ * @return true if the last entry in the array was removed,
  * @return false otherwise
  */
 template <class ItemType>
-bool ArrayBag<ItemType>::remove(const ItemType &an_entry)
+bool ArrayBag<ItemType>::pop_back()
 {
-    int found_index = getIndexOf(an_entry);
-    bool can_remove = !isEmpty() && (found_index > -1);
-    if (can_remove)
+    if (isEmpty())
+    {
+        return false;
+    }
+    else
     {
         item_count_--;
-        items_[found_index] = items_[item_count_];
+    }
+}
+
+/**
+ * @brief finds and removes an_entry from elements_
+ *
+ * @param an_entry to be removed
+ * @return true if an_entry was successfully removed from elements_,
+ * @return false otherwise
+ */
+template <class ItemType>
+bool ArrayBag<ItemType>::removeInstanceOf(const ItemType &an_entry)
+{
+    int move_index = getIndexOf(an_entry);
+    bool can_remove = !isEmpty() && (move_index > -1);
+    if (can_remove)
+    {
+        for (int i = move_index + 1; i < item_count_; i++)
+        {
+            elements_[move_index] = elements_[i];
+            move_index++;
+        }
+        item_count_--;
     }
     return can_remove;
 }
@@ -122,7 +186,7 @@ bool ArrayBag<ItemType>::remove(const ItemType &an_entry)
 /**
  * @brief makes the array empty
  *
- * @post does not actually empty the contents of items_, but allows for them to be overwritten
+ * @post does not actually empty the contents of elements_, but allows for them to be overwritten
  */
 template <class ItemType>
 void ArrayBag<ItemType>::clear()
@@ -131,59 +195,39 @@ void ArrayBag<ItemType>::clear()
 }
 
 /**
- * @brief combines the contents from both ArrayBag objects, INCLUDING duplicates, adding items from the argument bag as long as there is space
+ * @brief Allows direct element access using the [] operator
  *
- * @param array_bag_duplicate object whose contents are to be inserted into items_
+ * @param i is the index in the array
+ * @note Bounds-checking is NOT performed -> Be sure to avoid using indexes greater than or equal to item_count_
+ * @return a copy of the item at the location specified by the parameter
  */
 template <class ItemType>
-void ArrayBag<ItemType>::operator+=(const ArrayBag &array_bag_duplicate)
+ItemType ArrayBag<ItemType>::operator[](int i) const
 {
-    for (int i = 0; i < array_bag_duplicate.getCurrentSize(); i++)
-    {
-        bool has_room = (item_count_ < array_capacity_);
-        if (has_room == true)
-        {
-            items_[item_count_] = array_bag_duplicate[i];
-            item_count_++;
-        }
-        else
-        {
-            std::cout << "Insertion failed! " << i << " items from array_bag_duplicate have been added into the array!";
-            break;
-        }
-    }
+    return elements_[i];
 }
 
 /**
- * @brief combines the contents from both ArrayBag objects, EXCLUDING duplicates, adding items from the argument bag as long as there is space
+ * @brief Allows direct element access using the [] operator
  *
- * @param array_bag_duplicate object whose contents are to be inserted into items_
+ * @param i is the index in the array
+ * @note Bounds-checking is NOT performed -> Be sure to avoid using indexes greater than or equal to item_count_
+ * @return a reference to the item at the location specified by the parameter
  */
 template <class ItemType>
-void ArrayBag<ItemType>::operator/=(const ArrayBag &array_bag_duplicate)
+ItemType &ArrayBag<ItemType>::operator[](int i)
 {
-    for (int i = 0; i < array_bag_duplicate.getCurrentSize(); i++)
-    {
-        if (contains(array_bag_duplicate[i]) == false)
-        {
-            add(array_bag_duplicate[i]);
-        }
-        else
-        {
-            std::cout << "Insertion failed! " << i << " items from array_bag_duplicate have been added into the array!";
-            break;
-        }
-    }
+    return elements_[i];
 }
 
 //********* PRIVATE METHODS **************//
 
 /**
- * @brief Get the index of target in items_
+ * @brief Get the index of target in elements_
  *
- * @param target to be found in items_
- * @return either the index target in items_,
- * @return -1 if items_ does not contain the target
+ * @param target to be found in elements_
+ * @return either the index target in elements_,
+ * @return -1 if elements_ does not contain the target
  */
 template <class ItemType>
 int ArrayBag<ItemType>::getIndexOf(const ItemType &target) const
@@ -194,7 +238,7 @@ int ArrayBag<ItemType>::getIndexOf(const ItemType &target) const
 
     while (!found && (search_index < item_count_))
     {
-        if (items_[search_index] == target)
+        if (elements_[search_index] == target)
         {
             found = true;
             result = search_index;
